@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="c_balck_333">#333333</color>
+    <color name="c_while">#ffffff</color>
+    <color name="c_back">#000000</color>
+    <color name="c_gray">#aaaaaa</color>
+
+    <color name="c_while1">#55ffffff</color>
+    <color name="c_price_red">#FFF4291F</color>
+    <color name="wxpay_color">#00bb31</color>
+    <color name="zfb_color">#00a0e9</color>
+</resources>
