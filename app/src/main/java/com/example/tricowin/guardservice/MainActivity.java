@@ -1,7 +1,9 @@
 package com.example.tricowin.guardservice;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -9,6 +11,9 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -35,7 +40,10 @@ import com.zhy.http.okhttp.callback.FileCallBack;
 import org.w3c.dom.Text;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -49,6 +57,7 @@ public class MainActivity extends Activity {
     private Button buttonChg;
     private Button buttonSave;
     private Button buttonStart;
+    private int downloadCount=0;//启动下载的次数
     //private Button textView;
     private ProgressDialog progressDialog;
     private boolean flg=false;
@@ -65,17 +74,16 @@ public class MainActivity extends Activity {
         buttonStart= findViewById(R.id.id_start);
 
         Log.e("ssss","getSystemModel() = "+getSystemModel());
-       // textView = findViewById(R.id.status_text);
 
-
-        Typeface type= Typeface.createFromAsset(getAssets(), "a1.otf");
-        editText.setTypeface(type);
-        buttonChg.setTypeface(type);
-        buttonSave.setTypeface(type);
+//        Typeface type= Typeface.createFromAsset(getAssets(), "a1.otf");
+//        editText.setTypeface(type);
+//        buttonChg.setTypeface(type);
+//        buttonSave.setTypeface(type);
         Typeface type1= Typeface.createFromAsset(getAssets(), "word1.TTF");
         buttonStart.setTypeface(type1);
 
     }
+
 
 
     /**
@@ -99,7 +107,6 @@ public class MainActivity extends Activity {
 
 
     public void onStartShop(View view) {
-
         //如果之前点击过启动按钮则不能再点击
         String reboot = (String) SPUtils.get(MainActivity.this, "reboot", "");
         if ("1".equals(reboot)){
@@ -178,10 +185,9 @@ public class MainActivity extends Activity {
 
         @Override
         public void handleMessage(Message msg) {
-
+            String url = (String) SPUtils.get(MainActivity.this, "apk_url", "null");
             switch (msg.what) {
                 case 1:
-                    String url = (String) SPUtils.get(MainActivity.this, "apk_url", "null");
                     Log.e("ssss","startToDownload url = "+url);
                     if ("null".equals(url)||"".equals(url)){
                         Toast.makeText(MainActivity.this, "请输入apk的下载链接并点击保存", Toast.LENGTH_LONG).show();
@@ -192,6 +198,16 @@ public class MainActivity extends Activity {
                         SPUtils.put(MainActivity.this, "reboot", "1");
                     }
                     break;
+                case 2:
+                    if (downloadCount>5){
+                        Intent intent =  new Intent(Settings.ACTION_WIFI_SETTINGS);
+                        startActivity(intent);
+                    }else{
+                        Toast.makeText(MainActivity.this, "网络错误，尝试重新下载", Toast.LENGTH_LONG).show();
+                        downloadCount++;
+                        startToDownload(url, "tricowin.apk",  "");
+                    }
+                    break;
 
             }
         }
@@ -199,6 +215,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onResume() {
+        downloadCount =0;
         SPUtils.put(MainActivity.this, "reboot", "0");
         super.onResume();
         //这里必须判断一下是否为空
@@ -223,6 +240,7 @@ public class MainActivity extends Activity {
     public void startToDownload(String url, String fileName, final String msg) {
         //下载前先删除文件
         //textView.setText("正在下载");
+        Log.e("ssss","下载url = "+url);
         Include.delete("/storage/emulated/0/tricowin.apk");
         progressDialog = new ProgressDialog(this);
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -239,17 +257,18 @@ public class MainActivity extends Activity {
                 {
                     @Override
                     public void onError(Call call, Exception e, int id) {
-//                       textView.setText("网络未连接，正跳转设置");
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                Intent intent =  new Intent(Settings.ACTION_WIFI_SETTINGS);
-                                startActivity(intent);
+                                //下载错误，网络错误
+                                Message msg2 = new Message();
+                                msg2.what = 2;
+                                if (mhandler != null) {
+                                    mhandler.sendMessage(msg2);
+                                }
                             }
                         }, 2000);
 
-
-                        Log.e("Download", "error");
                         progressDialog.dismiss();
                     }
 
