@@ -21,31 +21,47 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.utils.Include;
+import com.example.utils.RootCmd;
 import com.example.utils.SPUtils;
+import com.fenjuly.library.ArrowDownloadButton;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.FileCallBack;
 
 import org.w3c.dom.Text;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import okhttp3.Call;
 
@@ -56,7 +72,7 @@ public class MainActivity extends Activity {
     private EditText editText;
     private Button buttonChg;
     private Button buttonSave;
-    private Button buttonStart;
+    private ArrowDownloadButton buttonStart;
     private int downloadCount=0;//启动下载的次数
     //private Button textView;
     private ProgressDialog progressDialog;
@@ -66,22 +82,48 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         editText = findViewById(R.id.apkurl_text);
-        editText.setText("http://www.tricowin.net/shouhou/shopGwc.apk");
+        editText.setText("购物车.apk");
         editText.clearFocus();
-
         buttonChg= findViewById(R.id.id_chg);
         buttonSave= findViewById(R.id.id_save);
-        buttonStart= findViewById(R.id.id_start);
+        buttonStart= findViewById(R.id.id_start1);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                setValueToProp("persist.sys.sys_bar","hide");
+                setValueToProp("persist.sys.statebarstate","0");
+                setValueToProp("persist.sys.usb","1");
 
-        Log.e("ssss","getSystemModel() = "+getSystemModel());
+                Intent bar_intent= new Intent("MyReceiver_Action");
+                bar_intent.putExtra("cmd","hide");
+                MainActivity.this.sendBroadcast(bar_intent);
 
-//        Typeface type= Typeface.createFromAsset(getAssets(), "a1.otf");
-//        editText.setTypeface(type);
-//        buttonChg.setTypeface(type);
-//        buttonSave.setTypeface(type);
-        Typeface type1= Typeface.createFromAsset(getAssets(), "word1.TTF");
-        buttonStart.setTypeface(type1);
+            }
+        }, 500);
+    }
 
+
+
+
+
+
+
+
+
+    public static void setValueToProp(String key, String val) {
+        try {
+            Class<?> classType = Class.forName("android.os.SystemProperties");
+            Method method = classType.getDeclaredMethod("set", new Class[] { String.class, String.class });
+            method.invoke(classType, new Object[] { key, val });
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -97,11 +139,6 @@ public class MainActivity extends Activity {
             cancelTimer();
             SPUtils.put(MainActivity.this, "reboot", "1");
         } else {
-            Message msg2 = new Message();
-            msg2.what = 1;
-            if (mhandler != null) {
-                mhandler.sendMessage(msg2);
-            }
         }
     }
 
@@ -117,8 +154,6 @@ public class MainActivity extends Activity {
         cancelTimer();
         startMainProgram();
     }
-
-
     private void cancelTimer(){
         if (timer != null) {
             timer.cancel();
@@ -134,17 +169,33 @@ public class MainActivity extends Activity {
             Toast.makeText(MainActivity.this, "请输入apk的下载链接", Toast.LENGTH_LONG).show();
             return;
         }
+
+        if (url.equals("购物车.apk")){
+            url ="https://tricobucket.oss-cn-hangzhou.aliyuncs.com/apk/shopGwc_old.apk";
+        }else if (url.equals("单商品.apk")){
+            url ="https://tricobucket.oss-cn-hangzhou.aliyuncs.com/apk/shopDg.apk";
+        }
+
         SPUtils.put(MainActivity.this, "apk_url", url);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Message msg2 = new Message();
+                msg2.what = 3;
+                if (mhandler != null) {
+                    mhandler.sendMessage(msg2);
+                }
+            }
+        }, 2000);
     }
 
     public void onClickClean(View view) {
-
         if (flg){
-            editText.setText("http://www.tricowin.net/shouhou/shopGwc.apk");
+            editText.setText("购物车.apk");
             flg = false;
             Toast.makeText(MainActivity.this, "购物车功能apk", Toast.LENGTH_LONG).show();
         }else{
-            editText.setText("http://www.tricowin.net/shouhou/shopDg.apk");
+            editText.setText("单商品.apk");
             Toast.makeText(MainActivity.this, "单品购买apk", Toast.LENGTH_LONG).show();
             flg = true;
         }
@@ -171,6 +222,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPostResume() {
         Log.e("ssss","GuardService===="+"onPostResume");
+
         super.onPostResume();
     }
 
@@ -188,15 +240,16 @@ public class MainActivity extends Activity {
             String url = (String) SPUtils.get(MainActivity.this, "apk_url", "null");
             switch (msg.what) {
                 case 1:
-                    Log.e("ssss","startToDownload url = "+url);
-                    if ("null".equals(url)||"".equals(url)){
-                        Toast.makeText(MainActivity.this, "请输入apk的下载链接并点击保存", Toast.LENGTH_LONG).show();
-                       // textView.setText("输入链接点击保存");
-                    }else{
-                        startToDownload(url, "tricowin.apk",  "");
-                        cancelTimer();
-                        SPUtils.put(MainActivity.this, "reboot", "1");
-                    }
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Message msg2 = new Message();
+                            msg2.what = 3;
+                            if (mhandler != null) {
+                                mhandler.sendMessage(msg2);
+                            }
+                        }
+                    }, 2000);
                     break;
                 case 2:
                     if (downloadCount>5){
@@ -209,6 +262,23 @@ public class MainActivity extends Activity {
                     }
                     break;
 
+                case 3:
+                    PackageManager packageManager = getPackageManager();
+                    if (checkPackInfo("com.tricowin.vending")) {
+                        Intent intent = packageManager.getLaunchIntentForPackage("com.tricowin.vending");
+                        startActivity(intent);
+                        cancelTimer();
+                        SPUtils.put(MainActivity.this, "reboot", "1");
+                    }else{
+                        if ("null".equals(url)||"".equals(url)){
+                            Toast.makeText(MainActivity.this, "请输入apk的下载链接并点击保存", Toast.LENGTH_LONG).show();
+                        }else{
+                            startToDownload(url, "tricowin.apk",  "");
+                            cancelTimer();
+                            SPUtils.put(MainActivity.this, "reboot", "1");
+                        }
+                    }
+                    break;
             }
         }
     };
@@ -216,6 +286,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         downloadCount =0;
+        SPUtils.put(MainActivity.this, "apk_url", "null");
         SPUtils.put(MainActivity.this, "reboot", "0");
         super.onResume();
         //这里必须判断一下是否为空
@@ -224,6 +295,8 @@ public class MainActivity extends Activity {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
+
+
                     startMainProgram();
                 }
             }, 6000, 10000);
@@ -239,16 +312,9 @@ public class MainActivity extends Activity {
      */
     public void startToDownload(String url, String fileName, final String msg) {
         //下载前先删除文件
-        //textView.setText("正在下载");
         Log.e("ssss","下载url = "+url);
         Include.delete("/storage/emulated/0/tricowin.apk");
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setMessage("正在下载自动售货机新版本");
-        //不能手动取消下载进度对话框
-        progressDialog.setCancelable(false);
-        progressDialog.show();
-
+        buttonStart.startAnimating();
         OkHttpUtils
                 .get()
                 .url(url)
@@ -268,18 +334,15 @@ public class MainActivity extends Activity {
                                 }
                             }
                         }, 2000);
-
-                        progressDialog.dismiss();
+                        buttonStart.reset();
                     }
 
                     @Override
                     public void onResponse(File response, int id) {
-                        progressDialog.dismiss();
-                        //textView.setText("下载完成");
+                        buttonStart.reset();
                         try {
                             openAPK(response.getAbsolutePath());
                         } catch (Exception e) {
-                           // textView.setText("安装出错");
                             Toast.makeText(MainActivity.this, "安装出错", Toast.LENGTH_LONG).show();
                             Log.e("Download","安装出错");
                         }
@@ -289,9 +352,7 @@ public class MainActivity extends Activity {
                     @Override
                     public void inProgress(float progress, long total, int id) {
                         super.inProgress(progress, total, id);
-                        progressDialog.setMax((int) total);
-                        progressDialog.setProgress((int) (progress * total));
-                        Log.e("Download", progress + "/" + total);
+                        buttonStart.setProgress(progress *100);
                     }
                 });
     }
@@ -322,12 +383,24 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
+    //点击空白取消软键盘
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        InputMethodManager im = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        im.hideSoftInputFromWindow(getCurrentFocus().getApplicationWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        return super.onTouchEvent(event);
     }
 
 
     public static String getSystemModel() {
         return android.os.Build.MODEL;
     }
+
+
+
+
+
 
 }
