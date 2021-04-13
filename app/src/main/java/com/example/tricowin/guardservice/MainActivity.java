@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
     private int downloadCount=0;//启动下载的次数
     //private Button textView;
     private ProgressDialog progressDialog;
-    private boolean flg=false;
+    private int flg=0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -174,6 +174,8 @@ public class MainActivity extends Activity {
             url ="https://tricobucket.oss-cn-hangzhou.aliyuncs.com/apk/shopGwc_old.apk";
         }else if (url.equals("单商品.apk")){
             url ="https://tricobucket.oss-cn-hangzhou.aliyuncs.com/apk/shopDg.apk";
+        }else if (url.equals("精简版.apk")){
+            url ="https://tricobucket.oss-cn-hangzhou.aliyuncs.com/apk/jinjb.apk";
         }
 
         SPUtils.put(MainActivity.this, "apk_url", url);
@@ -190,15 +192,24 @@ public class MainActivity extends Activity {
     }
 
     public void onClickClean(View view) {
-        if (flg){
-            editText.setText("购物车.apk");
-            flg = false;
-            Toast.makeText(MainActivity.this, "购物车功能apk", Toast.LENGTH_LONG).show();
-        }else{
-            editText.setText("单商品.apk");
-            Toast.makeText(MainActivity.this, "单品购买apk", Toast.LENGTH_LONG).show();
-            flg = true;
+        switch(flg){
+            case 0:
+                editText.setText("购物车功能.apk");
+                flg = 1;
+                Toast.makeText(MainActivity.this, "购物车功能apk", Toast.LENGTH_LONG).show();
+                break;
+            case 1:
+                editText.setText("单商品.apk");
+                Toast.makeText(MainActivity.this, "单品购买apk", Toast.LENGTH_LONG).show();
+                flg = 2;
+                break;
+            case 2:
+                editText.setText("精简版.apk");
+                Toast.makeText(MainActivity.this, "精简版apk", Toast.LENGTH_LONG).show();
+                flg = 0;
+                break;
         }
+
         SPUtils.put(MainActivity.this, "apk_url", "null");
     }
 
