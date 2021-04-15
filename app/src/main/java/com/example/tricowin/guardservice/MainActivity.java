@@ -38,6 +38,7 @@ import android.widget.Toast;
 import com.example.utils.Include;
 import com.example.utils.RootCmd;
 import com.example.utils.SPUtils;
+import com.example.view.MyArrowDownloadButton;
 import com.fenjuly.library.ArrowDownloadButton;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.FileCallBack;
@@ -72,7 +73,7 @@ public class MainActivity extends Activity {
     private EditText editText;
     private Button buttonChg;
     private Button buttonSave;
-    private ArrowDownloadButton buttonStart;
+    private MyArrowDownloadButton buttonStart;
     private int downloadCount=0;//启动下载的次数
     //private Button textView;
     private ProgressDialog progressDialog;
@@ -86,7 +87,7 @@ public class MainActivity extends Activity {
         editText.clearFocus();
         buttonChg= findViewById(R.id.id_chg);
         buttonSave= findViewById(R.id.id_save);
-        buttonStart= findViewById(R.id.id_start1);
+        buttonStart= findViewById(R.id.id_startOne);
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -101,15 +102,6 @@ public class MainActivity extends Activity {
             }
         }, 500);
     }
-
-
-
-
-
-
-
-
-
     public static void setValueToProp(String key, String val) {
         try {
             Class<?> classType = Class.forName("android.os.SystemProperties");
@@ -161,7 +153,6 @@ public class MainActivity extends Activity {
             timer = null;
         }
     }
-
     public void onClickSave(View view) {
         String url = "";
         url = editText.getText().toString();
@@ -169,7 +160,6 @@ public class MainActivity extends Activity {
             Toast.makeText(MainActivity.this, "请输入apk的下载链接", Toast.LENGTH_LONG).show();
             return;
         }
-
         if (url.equals("购物车.apk")){
             url ="https://tricobucket.oss-cn-hangzhou.aliyuncs.com/apk/shopGwc_old.apk";
         }else if (url.equals("单商品.apk")){
@@ -233,7 +223,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onPostResume() {
         Log.e("ssss","GuardService===="+"onPostResume");
-
         super.onPostResume();
     }
 
@@ -306,8 +295,6 @@ public class MainActivity extends Activity {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-
-
                     startMainProgram();
                 }
             }, 6000, 10000);
@@ -326,12 +313,7 @@ public class MainActivity extends Activity {
         Log.e("ssss","下载url = "+url);
         Include.delete("/storage/emulated/0/tricowin.apk");
         buttonStart.startAnimating();
-        OkHttpUtils
-                .get()
-                .url(url)
-                .build()
-                .execute(new FileCallBack(Environment.getExternalStorageDirectory().getAbsolutePath(), fileName)
-                {
+        OkHttpUtils.get().url(url).build().execute(new FileCallBack(Environment.getExternalStorageDirectory().getAbsolutePath(), fileName) {
                     @Override
                     public void onError(Call call, Exception e, int id) {
                         new Handler().postDelayed(new Runnable() {
@@ -347,7 +329,6 @@ public class MainActivity extends Activity {
                         }, 2000);
                         buttonStart.reset();
                     }
-
                     @Override
                     public void onResponse(File response, int id) {
                         buttonStart.reset();
@@ -400,7 +381,8 @@ public class MainActivity extends Activity {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         InputMethodManager im = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        im.hideSoftInputFromWindow(getCurrentFocus().getApplicationWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+//        im.hideSoftInputFromWindow(getCurrentFocus().getApplicationWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        im.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         return super.onTouchEvent(event);
     }
 

@@ -3,12 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
     <RelativeLayout
         android:background="@drawable/bg"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -79,14 +77,12 @@
         </RelativeLayout>
 
 
-        <com.fenjuly.library.ArrowDownloadButton
-            android:id="@+id/id_start1"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
+        <com.example.view.MyArrowDownloadButton
+            android:id="@+id/id_startOne"
+            android:layout_centerInParent="true"
             android:onClick="onStartShop"
-
-            android:layout_width="180dp"
-            android:layout_height="180dp" />
+            android:layout_width="120dp"
+            android:layout_height="120dp" />
 
     </RelativeLayout>
 
